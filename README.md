@@ -2,11 +2,11 @@
 
 A minimalist, high-performance monitoring solution for dual-WAN environments (Starlink & Personal Flow).
 
-<img width="875" height="762" alt="architecture" src="https://github.com/user-attachments/assets/d2b34c38-7ecb-414d-9197-d01f6883d166" />
+<img width="2031" height="1771" alt="image" src="https://github.com/user-attachments/assets/fd52cf02-5033-4d9e-bf91-a44f639b7f3e" />
 
 ## Core Features
 
-- **Automated Polling**: Real-time telemetry via SSH (Asus) and REST API (Starlink).
+- **Automated Polling**: Linux Server with real-time telemetry via SSH (Asus) and REST API (Starlink).
 - **NOC Dashboard**: Premium glassmorphism interface with real-time Traffic Timelines.
 - **Live Console**: Integrated terminal emulator for system logs and status debugging.
 - **Local Persistence**: Zero-dependency data storage using localized JSON snapshots.
