@@ -2,7 +2,7 @@
 
 A minimalist, high-performance monitoring solution for dual-WAN environments (Starlink & Personal Flow).
 
-![Architecture](./assets/architecture.png)
+<img width="875" height="762" alt="architecture" src="https://github.com/user-attachments/assets/d2b34c38-7ecb-414d-9197-d01f6883d166" />
 
 ## Core Features
 
