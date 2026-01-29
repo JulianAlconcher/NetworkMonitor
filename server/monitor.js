@@ -85,14 +85,13 @@ async function pollAsus() {
     });
 }
 
-function parseAsusTraffic(output) {
-    const lines = output.split('\n');
-    const wanLine = lines.find(l => l.includes('eth0:') || l.includes('ppp0') || l.includes('vlan2:'));
+const { parseAsusOutput } = require('./parser');
 
-    if (wanLine) {
-        const parts = wanLine.trim().split(/\s+/);
-        const rx = parseInt(parts[1]);
-        const tx = parseInt(parts[9]);
+function parseAsusTraffic(output) {
+    const stats = parseAsusOutput(output);
+
+    if (stats) {
+        const { rx, tx } = stats;
 
         if (state.lastAsusStats) {
             const rxDiff = rx - state.lastAsusStats.rx;
