@@ -1,3 +1,4 @@
+let lastLogCount = 0;
 let usageChart = null;
 let timelineChart = null;
 let trafficHistory = {
@@ -6,7 +7,7 @@ let trafficHistory = {
     personal: []
 };
 
-async function fetchData() {
+async function fetchStats() {
     try {
         const response = await fetch('http://localhost:3001/api/status');
         const data = await response.json();
@@ -17,32 +18,57 @@ async function fetchData() {
     }
 }
 
-function updateUI(data) {
-    const { currentIsp, history } = data;
+async function fetchLogs() {
+    try {
+        const response = await fetch('http://localhost:3001/api/logs');
+        const logs = await response.json();
+        if (logs.length !== lastLogCount) {
+            updateTerminal(logs);
+            lastLogCount = logs.length;
+        }
+    } catch (e) {
+        console.error('Failed to fetch logs:', e);
+    }
+}
 
-    // Calculate totals in GB
+function updateTerminal(logs) {
+    const terminal = document.getElementById('terminal-body');
+    terminal.innerHTML = '';
+
+    logs.forEach(log => {
+        const div = document.createElement('div');
+        div.className = `log-line ${log.type}`;
+        div.innerHTML = `
+            <span class="time">[${log.timestamp}]</span>
+            <span class="message">${log.message}</span>
+        `;
+        terminal.appendChild(div);
+    });
+
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+function updateUI(data) {
+    const { history } = data;
+
     const starlinkTotal = (history['Starlink'].bytesIn + history['Starlink'].bytesOut) / (1024 ** 3);
     const personalTotal = (history['Personal'].bytesIn + history['Personal'].bytesOut) / (1024 ** 3);
     const totalGB = starlinkTotal + personalTotal;
 
-    // Update Text Stats
     document.getElementById('starlink-usage').textContent = `${starlinkTotal.toFixed(2)} GB`;
     document.getElementById('personal-usage').textContent = `${personalTotal.toFixed(2)} GB`;
     document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
 
-    // Update Progress Bars (Relative contribution)
     const starlinkPercent = totalGB > 0 ? (starlinkTotal / totalGB) * 100 : 0;
     const personalPercent = totalGB > 0 ? (personalTotal / totalGB) * 100 : 0;
     document.getElementById('starlink-progress').style.width = `${starlinkPercent}%`;
     document.getElementById('personal-progress').style.width = `${personalPercent}%`;
 
-    // Update LEDs (active if lastCheck < 2 minutes ago)
     const now = Date.now();
     const starlinkActive = (now - history['Starlink'].lastCheck) < 120000;
     const personalActive = (now - history['Personal'].lastCheck) < 120000;
     updateStatusLEDs(starlinkActive, personalActive);
 
-    // Update Charts
     updateDistributionChart(starlinkTotal, personalTotal);
     updateTimelineChart(starlinkTotal, personalTotal);
 }
@@ -50,20 +76,17 @@ function updateUI(data) {
 function updateStatusLEDs(starlink, personal) {
     const sLed = document.getElementById('starlink-led');
     const pLed = document.getElementById('personal-led');
-
     sLed.className = `led ${starlink ? 'active' : ''}`;
     pLed.className = `led ${personal ? 'active' : ''}`;
 }
 
 function updateDistributionChart(starlink, personal) {
     const ctx = document.getElementById('usageChart').getContext('2d');
-
     if (usageChart) {
         usageChart.data.datasets[0].data = [starlink, personal];
         usageChart.update();
         return;
     }
-
     usageChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -93,7 +116,6 @@ function updateTimelineChart(starlink, personal) {
     const ctx = document.getElementById('timelineChart').getContext('2d');
     const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Keep only last 30 data points
     if (trafficHistory.labels.length > 30) {
         trafficHistory.labels.shift();
         trafficHistory.starlink.shift();
@@ -163,10 +185,15 @@ document.getElementById('reset-btn').addEventListener('click', async () => {
         trafficHistory = { labels: [], starlink: [], personal: [] };
         if (timelineChart) timelineChart.destroy();
         timelineChart = null;
-        fetchData();
+        fetchStats();
+        fetchLogs();
     }
 });
 
-// Initial fetch and poll
-fetchData();
-setInterval(fetchData, 10000); // 10s updates
+// Initial calls
+fetchStats();
+fetchLogs();
+
+// Intervals
+setInterval(fetchStats, 10000);
+setInterval(fetchLogs, 3000);

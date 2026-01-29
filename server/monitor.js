@@ -22,9 +22,22 @@ let state = {
         'Starlink': { bytesIn: 0, bytesOut: 0, lastCheck: Date.now() },
         'Personal': { bytesIn: 0, bytesOut: 0, lastCheck: Date.now() }
     },
+    logs: [],
     lastAsusStats: null,
     lastStarlinkStats: null
 };
+
+// Log helper
+function addLog(message, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = { timestamp, message, type };
+    state.logs.push(logEntry);
+    if (state.logs.length > 50) state.logs.shift();
+
+    // Console output for terminal
+    const colors = { info: '\x1b[37m', success: '\x1b[32m', warn: '\x1b[33m', error: '\x1b[31m' };
+    console.log(`${colors[type] || colors.info}[${timestamp}] ${message}\x1b[0m`);
+}
 
 // Load DB
 if (fs.existsSync(DB_PATH)) {
@@ -40,28 +53,20 @@ function saveDb() {
     fs.writeFileSync(DB_PATH, JSON.stringify({ history: state.history }, null, 2));
 }
 
-const IS_SIMULATION = process.env.SIMULATION_MODE === 'true';
-
-// Simulation data generator
-function getSimulatedTraffic() {
-    return Math.floor(Math.random() * 5 * 1024 * 1024); // Random 0-5 MB
-}
-
 // ASUS SSH Polling (Personal ISP)
 async function pollAsus() {
-    if (IS_SIMULATION) {
-        state.history['Personal'].bytesIn += getSimulatedTraffic();
-        state.history['Personal'].bytesOut += getSimulatedTraffic() * 0.1;
-        state.history['Personal'].lastCheck = Date.now();
+    if (!process.env.ASUS_PASS) {
+        addLog('ASUS: Missing password in .env', 'warn');
         return;
     }
-
-    if (!process.env.ASUS_PASS) return;
 
     const conn = new Client();
     conn.on('ready', () => {
         conn.exec('cat /proc/net/dev', (err, stream) => {
-            if (err) return console.error('ASUS SSH Exec Error:', err);
+            if (err) {
+                addLog(`ASUS SSH Exec Error: ${err.message}`, 'error');
+                return;
+            }
             let data = '';
             stream.on('data', (d) => data += d);
             stream.on('close', () => {
@@ -70,12 +75,13 @@ async function pollAsus() {
             });
         });
     }).on('error', (err) => {
-        console.error('ASUS SSH Connection Error:', err.message);
+        addLog(`ASUS SSH Connection Error: ${err.message}`, 'error');
     }).connect({
         host: process.env.ASUS_HOST || '192.168.50.1',
         port: 22,
         username: process.env.ASUS_USER || 'admin',
-        password: process.env.ASUS_PASS
+        password: process.env.ASUS_PASS,
+        readyTimeout: 5000
     });
 }
 
@@ -96,6 +102,7 @@ function parseAsusTraffic(output) {
                 state.history['Personal'].bytesIn += rxDiff;
                 state.history['Personal'].bytesOut += txDiff;
                 state.history['Personal'].lastCheck = Date.now();
+                if (rxDiff > 0) addLog(`ASUS: Updated traffic +${(rxDiff / (1024 * 1024)).toFixed(2)} MB`, 'success');
             }
         }
         state.lastAsusStats = { rx, tx };
@@ -104,13 +111,6 @@ function parseAsusTraffic(output) {
 
 // Starlink Polling
 async function pollStarlink() {
-    if (IS_SIMULATION) {
-        state.history['Starlink'].bytesIn += getSimulatedTraffic();
-        state.history['Starlink'].bytesOut += getSimulatedTraffic() * 0.1;
-        state.history['Starlink'].lastCheck = Date.now();
-        return;
-    }
-
     try {
         const url = `http://${process.env.STARLINK_HOST || '192.168.100.1'}/support/debug`;
         const res = await fetch(url, { timeout: 5000 });
@@ -127,12 +127,13 @@ async function pollStarlink() {
                 if (diff >= 0) {
                     state.history['Starlink'].bytesIn += diff;
                     state.history['Starlink'].lastCheck = Date.now();
+                    if (diff > 0) addLog(`Starlink: Updated traffic +${(diff / (1024 * 1024)).toFixed(2)} MB`, 'success');
                 }
             }
             state.lastStarlinkStats = currentTotal;
         }
     } catch (e) {
-        console.error('Starlink polling failed:', e.message);
+        addLog(`Starlink Polling Failed: ${e.message}`, 'error');
     }
 }
 
@@ -140,9 +141,12 @@ async function pollStarlink() {
 app.get('/api/status', (req, res) => {
     res.json({
         currentIsp: 'Multi-Network (Active)',
-        history: state.history,
-        simulation: IS_SIMULATION
+        history: state.history
     });
+});
+
+app.get('/api/logs', (req, res) => {
+    res.json(state.logs);
 });
 
 app.post('/api/reset', (req, res) => {
@@ -150,11 +154,11 @@ app.post('/api/reset', (req, res) => {
         'Starlink': { bytesIn: 0, bytesOut: 0, lastCheck: Date.now() },
         'Personal': { bytesIn: 0, bytesOut: 0, lastCheck: Date.now() }
     };
+    addLog('System reset requested by user', 'warn');
     saveDb();
     res.json({ message: 'History reset' });
 });
 
-// Schedule
 cron.schedule('* * * * *', () => {
     pollAsus();
     pollStarlink();
@@ -162,6 +166,5 @@ cron.schedule('* * * * *', () => {
 });
 
 app.listen(port, () => {
-    console.log(`\n🚀 NOC Monitor running at http://localhost:${port}`);
-    if (IS_SIMULATION) console.log('⚠️  SIMULATION MODE ENABLED');
+    addLog(`NOC Monitor running at http://localhost:${port}`, 'info');
 });
