@@ -40,8 +40,22 @@ function saveDb() {
     fs.writeFileSync(DB_PATH, JSON.stringify({ history: state.history }, null, 2));
 }
 
+const IS_SIMULATION = process.env.SIMULATION_MODE === 'true';
+
+// Simulation data generator
+function getSimulatedTraffic() {
+    return Math.floor(Math.random() * 5 * 1024 * 1024); // Random 0-5 MB
+}
+
 // ASUS SSH Polling (Personal ISP)
 async function pollAsus() {
+    if (IS_SIMULATION) {
+        state.history['Personal'].bytesIn += getSimulatedTraffic();
+        state.history['Personal'].bytesOut += getSimulatedTraffic() * 0.1;
+        state.history['Personal'].lastCheck = Date.now();
+        return;
+    }
+
     if (!process.env.ASUS_PASS) return;
 
     const conn = new Client();
@@ -57,9 +71,6 @@ async function pollAsus() {
         });
     }).on('error', (err) => {
         console.error('ASUS SSH Connection Error:', err.message);
-        if (err.message.includes('authentication')) {
-            console.warn('TIP: Check your .env credentials and ensure SSH is enabled in ASUS Admin -> System.');
-        }
     }).connect({
         host: process.env.ASUS_HOST || '192.168.50.1',
         port: 22,
@@ -69,7 +80,6 @@ async function pollAsus() {
 }
 
 function parseAsusTraffic(output) {
-    // We look for eth0 (typical WAN on ASUS RT-ACRH13) or ppp0
     const lines = output.split('\n');
     const wanLine = lines.find(l => l.includes('eth0:') || l.includes('ppp0') || l.includes('vlan2:'));
 
@@ -92,23 +102,23 @@ function parseAsusTraffic(output) {
     }
 }
 
-// Starlink Polling (via Support Debug JSON)
+// Starlink Polling
 async function pollStarlink() {
+    if (IS_SIMULATION) {
+        state.history['Starlink'].bytesIn += getSimulatedTraffic();
+        state.history['Starlink'].bytesOut += getSimulatedTraffic() * 0.1;
+        state.history['Starlink'].lastCheck = Date.now();
+        return;
+    }
+
     try {
         const url = `http://${process.env.STARLINK_HOST || '192.168.100.1'}/support/debug`;
         const res = await fetch(url, { timeout: 5000 });
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
 
         const text = await res.text();
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            console.error('Starlink returned non-JSON response. Check if 192.168.100.1 is showing the login page.');
-            return;
-        }
+        let data = JSON.parse(text);
 
-        // Extract stats from Starlink JSON (structure varies by firmware)
         const stats = data?.dish?.deviceState?.consumption;
         if (stats) {
             const currentTotal = stats.totalBytes || 0;
@@ -126,20 +136,12 @@ async function pollStarlink() {
     }
 }
 
-async function isStarlinkReachable() {
-    try {
-        const res = await fetch(`http://192.168.100.1`, { timeout: 2000 });
-        return res.ok;
-    } catch {
-        return false;
-    }
-}
-
 // Routes
 app.get('/api/status', (req, res) => {
     res.json({
         currentIsp: 'Multi-Network (Active)',
-        history: state.history
+        history: state.history,
+        simulation: IS_SIMULATION
     });
 });
 
@@ -160,6 +162,6 @@ cron.schedule('* * * * *', () => {
 });
 
 app.listen(port, () => {
-    console.log(`Integrated Monitor running at http://localhost:${port}`);
-    console.log(`Please ensure .env is configured for ASUS SSH.`);
+    console.log(`\n🚀 NOC Monitor running at http://localhost:${port}`);
+    if (IS_SIMULATION) console.log('⚠️  SIMULATION MODE ENABLED');
 });

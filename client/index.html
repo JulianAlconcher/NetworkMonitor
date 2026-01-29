@@ -4,10 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetworkMonitor | Starlink vs Personal</title>
+    <title>NetworkMonitor | NOC Dashboard</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Outfit:wght@600;800&display=swap"
+        rel="stylesheet">
 </head>
 
 <body>
@@ -17,52 +19,78 @@
                 <span class="icon">📡</span>
                 <h1>Network<span>Monitor</span></h1>
             </div>
-            <div id="active-isp-badge" class="isp-badge unknown">
-                Detecting Source...
+            <div id="active-isp-badge" class="isp-badge monitoring">
+                System Active
             </div>
         </header>
 
         <main>
             <section class="overview">
-                <div class="card stat-card starlink primary-glow">
-                    <h3>Starlink</h3>
+                <!-- Starlink Card -->
+                <div class="card starlink">
+                    <div class="card-header">
+                        <h3>Starlink</h3>
+                        <div class="status-indicator">
+                            <span id="starlink-led" class="led active"></span>
+                            Online
+                        </div>
+                    </div>
                     <div class="stat-value" id="starlink-usage">0.00 GB</div>
-                    <div class="stat-label">Total Consumption</div>
-                    <div class="progress-bar">
-                        <div id="starlink-progress" class="progress" style="width: 0%"></div>
+                    <div class="stat-label">Consumption (Current Cycle)</div>
+                    <div class="progress-container">
+                        <div id="starlink-progress" class="progress-bar" style="width: 0%"></div>
                     </div>
                 </div>
 
-                <div class="card stat-card personal secondary-glow">
-                    <h3>Personal</h3>
+                <!-- Personal Card -->
+                <div class="card personal">
+                    <div class="card-header">
+                        <h3>Personal</h3>
+                        <div class="status-indicator">
+                            <span id="personal-led" class="led active"></span>
+                            Online
+                        </div>
+                    </div>
                     <div class="stat-value" id="personal-usage">0.00 GB</div>
-                    <div class="stat-label">Total Consumption</div>
-                    <div class="progress-bar">
-                        <div id="personal-progress" class="progress" style="width: 0%"></div>
+                    <div class="stat-label">Consumption (Current Cycle)</div>
+                    <div class="progress-container">
+                        <div id="personal-progress" class="progress-bar" style="width: 0%"></div>
                     </div>
                 </div>
             </section>
 
-            <section class="charts">
-                <div class="card chart-card">
-                    <h3>Usage Distribution</h3>
+            <div class="charts-row">
+                <!-- Traffic Timeline -->
+                <section class="card chart-card">
+                    <h3>Traffic Timeline (Last 30 Min)</h3>
+                    <div class="chart-container">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Distribution -->
+                <section class="card chart-card">
+                    <h3>Distribution</h3>
                     <div class="chart-container">
                         <canvas id="usageChart"></canvas>
                     </div>
-                </div>
-            </section>
+                </section>
+            </div>
 
             <section class="details">
                 <div class="card info-card">
-                    <h3>Session Details</h3>
                     <div class="info-grid">
                         <div class="info-item">
                             <span class="label">Last Update</span>
                             <span class="value" id="last-update">-</span>
                         </div>
                         <div class="info-item">
-                            <span class="label">Traffic Monitoring</span>
-                            <span class="value">Active</span>
+                            <span class="label">Uptime</span>
+                            <span class="value" id="uptime">Active</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Data Source</span>
+                            <span class="value">Integrated API</span>
                         </div>
                     </div>
                 </div>
@@ -70,8 +98,8 @@
         </main>
 
         <footer>
-            <button id="reset-btn" class="btn-secondary">Reset History</button>
-            <p>&copy; 2026 NetworkMonitor Dashboard</p>
+            <button id="reset-btn" class="btn-reset">Reset History</button>
+            <p>&copy; 2026 NetworkMonitor NOC</p>
         </footer>
     </div>
     <script src="/js/dashboard.js"></script>
