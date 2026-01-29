@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Local data cache
+server/usage-history.json
+
+# Logs
+*.log
+
+# OS Metadata
+.DS_Store
