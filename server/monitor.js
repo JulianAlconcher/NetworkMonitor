@@ -136,12 +136,31 @@ async function pollStarlink() {
     }
 }
 
+const si = require('systeminformation');
+const os = require('os');
+
 // Routes
-app.get('/api/status', (req, res) => {
-    res.json({
-        currentIsp: 'Multi-Network (Active)',
-        history: state.history
-    });
+app.get('/api/status', async (req, res) => {
+    try {
+        const cpu = await si.currentLoad();
+        const mem = await si.mem();
+        
+        res.json({
+            currentIsp: 'Multi-Network (Active)',
+            history: state.history,
+            system: {
+                cpu: Math.round(cpu.currentLoad),
+                ram: Math.round((mem.active / mem.total) * 100),
+                uptime: Math.round(os.uptime())
+            }
+        });
+    } catch (e) {
+        res.json({
+            currentIsp: 'Multi-Network (Active)',
+            history: state.history,
+            system: { cpu: 0, ram: 0, uptime: 0 }
+        });
+    }
 });
 
 app.get('/api/logs', (req, res) => {

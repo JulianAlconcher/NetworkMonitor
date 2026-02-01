@@ -55,9 +55,17 @@ function updateUI(data) {
     const personalTotal = (history['Personal'].bytesIn + history['Personal'].bytesOut) / (1024 ** 3);
     const totalGB = starlinkTotal + personalTotal;
 
+    // Update Text Stats
     document.getElementById('starlink-usage').textContent = `${starlinkTotal.toFixed(2)} GB`;
     document.getElementById('personal-usage').textContent = `${personalTotal.toFixed(2)} GB`;
     document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+
+    // Update System Stats
+    if (data.system) {
+        document.getElementById('cpu-load').textContent = `${data.system.cpu}%`;
+        document.getElementById('ram-usage').textContent = `${data.system.ram}%`;
+        document.getElementById('uptime').textContent = formatUptime(data.system.uptime);
+    }
 
     const starlinkPercent = totalGB > 0 ? (starlinkTotal / totalGB) * 100 : 0;
     const personalPercent = totalGB > 0 ? (personalTotal / totalGB) * 100 : 0;
@@ -197,3 +205,14 @@ fetchLogs();
 // Intervals
 setInterval(fetchStats, 10000);
 setInterval(fetchLogs, 3000);
+
+function formatUptime(seconds) {
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor(seconds % (3600 * 24) / 3600);
+    const m = Math.floor(seconds % 3600 / 60);
+    const s = Math.floor(seconds % 60);
+
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m ${s}s`;
+}
