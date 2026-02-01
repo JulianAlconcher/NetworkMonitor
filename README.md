@@ -6,9 +6,6 @@ A minimalist, high-performance monitoring solution for dual-WAN environments (St
 <img width="2031" height="1771" alt="image" src="https://github.com/user-attachments/assets/1a30c02a-cd3a-483a-a6c2-7b7df5c7e0fa" />
 
 
-<img width="1490" height="714" alt="image" src="https://github.com/user-attachments/assets/36bd83e9-fcd1-4b3e-99d2-1b1311026f4b" />
-
-
 ## Core Features
 
 - **Automated Polling**: Linux Server with real-time telemetry via SSH (Asus) and REST API (Starlink).
