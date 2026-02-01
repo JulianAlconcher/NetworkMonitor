@@ -31,8 +31,14 @@ if ! command -v pm2 &> /dev/null; then
 fi
 
 # 5. Install Dependencies
-echo "📦 Installing project dependencies..."
+echo "📦 Installing backend dependencies..."
 npm install
+
+echo "📦 Installing frontend dependencies..."
+cd web && npm install
+echo "🏗️ Building frontend..."
+npm run build
+cd ..
 
 # 6. PM2 Configuration
 echo "⚙️ Configuring PM2 to start on boot..."

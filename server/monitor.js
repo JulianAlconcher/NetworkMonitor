@@ -12,8 +12,7 @@ const port = 3001;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../client')));
-app.use('/js', express.static(path.join(__dirname, '../js')));
+app.use(express.static(path.join(__dirname, '../web/dist')));
 
 const DB_PATH = path.join(__dirname, 'usage-history.json');
 
@@ -144,7 +143,7 @@ app.get('/api/status', async (req, res) => {
     try {
         const cpu = await si.currentLoad();
         const mem = await si.mem();
-        
+
         res.json({
             currentIsp: 'Multi-Network (Active)',
             history: state.history,

@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "start": "node server/monitor.js",
+    "dev": "cd web && npm run build && cd .. && node server/monitor.js"
   },
   "repository": {
     "type": "git",
