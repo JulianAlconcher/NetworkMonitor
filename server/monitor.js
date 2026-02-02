@@ -110,12 +110,16 @@ function parseAsusTraffic(output) {
 // Starlink Polling
 async function pollStarlink() {
     try {
-        const url = `http://${process.env.STARLINK_HOST || '192.168.100.1'}/support/debug`;
-        const res = await fetch(url, { timeout: 5000 });
+        const host = process.env.STARLINK_HOST || '192.168.100.1';
+        // Starlink Gen3/Gen4 dishes expect a POST request on port 9201
+        const url = `http://${host}:9201/debug`;
+        const res = await fetch(url, {
+            method: 'POST',
+            timeout: 5000
+        });
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
 
-        const text = await res.text();
-        let data = JSON.parse(text);
+        const data = await res.json();
 
         const stats = data?.dish?.deviceState?.consumption;
         if (stats) {
