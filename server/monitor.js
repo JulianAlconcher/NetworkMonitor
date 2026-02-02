@@ -115,11 +115,18 @@ async function pollStarlink() {
         const url = `http://${host}:9201/debug`;
         const res = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
+            // Some firmware versions are very picky about headers
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: '{}', // Try a minimal empty JSON object
             timeout: 5000
         });
-        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        if (!res.ok) {
+            const errorText = await res.text().catch(() => '');
+            throw new Error(`HTTP Error: ${res.status} ${errorText.substring(0, 100)}`);
+        }
 
         const data = await res.json();
 
