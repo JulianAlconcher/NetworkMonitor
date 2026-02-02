@@ -115,6 +115,8 @@ async function pollStarlink() {
         const url = `http://${host}:9201/debug`;
         const res = await fetch(url, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
             timeout: 5000
         });
         if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
