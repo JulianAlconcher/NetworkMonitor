@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
- // import './App.css';
+// import './App.css';
 import MetricCard from './components/MetricCard';
 import SystemHealth from './components/SystemHealth';
 import ChartsPanel from './components/ChartsPanel';
 import Terminal from './components/Terminal';
 import { Activity, RefreshCw } from 'lucide-react';
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = window.location.origin;
 
 function App() {
   const [stats, setStats] = useState(null);
